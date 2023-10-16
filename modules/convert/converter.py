@@ -48,11 +48,13 @@ def ConvertsV2Ray(buf):
             hysteria["port"] = urlHysteria.port
             hysteria["sni"] = query.get("peer")
             hysteria["obfs"] = query.get("obfs")
-            hysteria["alpn"] = str(query.get("alpn"))
+            alpn = get(query.get("alpn"))
+            if alpn != "":
+                hysteria["alpn"] = alpn.split(",")
             hysteria["auth_str"] = query.get("auth")
             hysteria["protocol"] = query.get("protocol")
-            up = query.get("up")
-            down = query.get("down")
+            up = get(query.get("up"))
+            down = get(query.get("down"))
             if up == "":
                 up = query.get("upmbps")
             if down == "":
@@ -62,6 +64,47 @@ def ConvertsV2Ray(buf):
             hysteria["skip-cert-verify"] = bool(distutils.util.strtobool(query.get("insecure")))
 
             proxies.append(hysteria)
+        elif scheme == "tuic":
+            # A temporary unofficial TUIC share link standard
+			# Modified from https://github.com/daeuniverse/dae/discussions/182
+			# Changes:
+			#   1. Support TUICv4, just replace uuid:password with token
+			#   2. Remove `allow_insecure` field
+            try:
+                urlTUIC = urlparse.urlparse(line)
+            except:
+                continue
+
+            query = dict(urlparse.parse_qsl(urlTUIC.query))
+        
+            tuic = {}
+            tuic["name"] = uniqueName(names, urlparse.unquote(urlTUIC.fragment))
+            tuic["type"] = scheme
+            tuic["server"] = urlTUIC.hostname
+            tuic["port"] = urlTUIC.port
+            tuic["udp"] = True
+            password = urlTUIC.password
+            if password is not None:
+                tuic["uuid"] = urlTUIC.username
+                tuic["password"] = password
+            else:
+                tuic["token"] = urlTUIC.username
+            cc = get(query.get("congestion_control"))
+            if cc != "":
+                tuic["congestion-control"] = cc
+            alpn = get(query.get("alpn"))
+            if alpn != "":
+                tuic["alpn"] = alpn.split(",")
+            sni = get(query.get("sni"))
+            if sni != "":
+                tuic["sni"] = sni
+            if query.get("disable_sni") == "1":
+                tuic["disable-sni"] = True
+            udpRelayMode = get(query.get("udp_relay_mode"))
+            if udpRelayMode != "":
+                tuic["udp-relay-mode"] = udpRelayMode
+            proxies.append(tuic)
+
         elif scheme == "trojan":
             try:
                 urlTrojan = urlparse.urlparse(line)
@@ -84,9 +127,14 @@ def ConvertsV2Ray(buf):
             sni = get(query.get("sni"))
             if sni != "":
                 trojan["sni"] = sni
+            
+            alpn = get(query.get("alpn"))
+            if alpn != "":
+                trojan["alpn"] = alpn.split(",")
 
-            network = get(query.get("type").lower())
+            network = get(query.get("type"))
             if network != "":
+                network = network.lower()
                 trojan["network"] = network
             
             if network == "ws":
@@ -202,6 +250,9 @@ def ConvertsV2Ray(buf):
                 tls = str(tls).lower()
                 if tls.endswith("tls"):
                     vmess["tls"] = True
+                alpn = values.get("alpn")
+                if alpn is not None and alpn != "":
+                    vmess["alpn"] = alpn.split(",")
 
             if network == "http":
                 headers = {}

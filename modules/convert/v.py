@@ -15,8 +15,6 @@ def handleVShareLink(names: dict, url: urlparse.ParseResult, scheme: str, proxy:
     proxy["port"] = url.port
     proxy["uuid"] = url.username
     proxy["udp"] = True
-    proxy["skip-cert-verify"] = False
-    proxy["tls"] = False
     tls = get(query.get("security")).lower()
     if tls.endswith("tls") or tls == "reality":
         proxy["tls"] = True
@@ -25,6 +23,9 @@ def handleVShareLink(names: dict, url: urlparse.ParseResult, scheme: str, proxy:
             proxy["client-fingerprint"] = "chrome"
         else:
             proxy["client-fingerprint"] = fingerprint
+        alpn = get(query.get("alpn"))
+        if alpn != "":
+            proxy["alpn"] = alpn.split(",")
     sni = get(query.get("sni"))
     if sni != "":
         proxy["servername"] = sni

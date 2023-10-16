@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding=utf-8
 from modules import pack
-from modules import snippet
+from modules import parse
 import re
 from flask import Flask, request, render_template 
 import requests
@@ -61,7 +61,7 @@ def sub():
     for i in range(len(url)):
         # the test of response
         respText = requests.get(url[i], headers={'User-Agent':'clash'}).text
-        content.append(snippet.parseSubs(respText))
+        content.append(parse.parseSubs(respText))
         url[i] = "{}provider?{}".format(request.url_root, urlencode({"url": url[i]}))
     if urlstandby:
         for i in range(len(urlstandby)):
@@ -79,7 +79,7 @@ def sub():
 def provider():
     headers = {'Content-Type': 'text/yaml;charset=utf-8'}
     url = request.args.get("url")
-    return snippet.parseSubs(
+    return parse.parseSubs(
         requests.get(url, headers={'User-Agent':'clash'}).text
     ), headers
 

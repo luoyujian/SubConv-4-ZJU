@@ -3,14 +3,14 @@ This module is to general a complete config for Clash
 """
 
 
-from modules import snippet
+from modules import parse
 from modules import head
 import config
 import cache
 
 
 def pack(url: list, urlstandby, content: str, interval, domain, short):
-    regionDict, total = snippet.mkList(content)  # regions available and corresponding group name
+    regionDict, total = parse.mkList(content)  # regions available and corresponding group name
     result = ""
 
     # create a snippet containing region groups

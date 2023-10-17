@@ -6,6 +6,7 @@ This module is to general a complete config for Clash
 from modules import parse
 from modules import head
 from modules.convert import converter
+import re
 import config
 import yaml
 import cache
@@ -353,7 +354,18 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
         if subscriptions:
             urlTest["use"] = subscriptions
         if proxiesName:
-            urlTest["proxies"] = proxiesName
+            urlTestProxies = []
+            for p in proxiesName:
+                if re.search(
+                    total[i][0],
+                    p,
+                    re.I
+                ) is not None:
+                    urlTestProxies.append(p)
+            if len(urlTestProxies) > 0:
+                urlTest["proxies"] = urlTestProxies
+            else:
+                urlTestProxies = None
         proxyGroups["proxy-groups"].append(urlTest)
 
     result.update(proxyGroups)

@@ -35,7 +35,7 @@ def parseSubs(content):
     return proxies
 
 # create a dict containg resions and corresponding proxy group
-def mkList(content: list):
+def mkList(content: list, urlstandalone: list):
     result = []
     total = {}
     for u in content:
@@ -48,4 +48,16 @@ def mkList(content: list):
                 tmp[i] = REGION_DICT[i]
                 total[i] = REGION_DICT[i]
         result.append(tmp)
+    if urlstandalone:
+        for u in urlstandalone:
+            tmp = {}
+            for i in REGION_DICT:
+                if re.search(
+                    REGION_DICT[i][0],
+                    u["name"],
+                    re.I
+                ) is not None:
+                    tmp[i] = REGION_DICT[i]
+                    total[i] = REGION_DICT[i]
+            result.append(tmp)
     return result, total

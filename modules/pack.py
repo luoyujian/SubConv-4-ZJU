@@ -5,82 +5,101 @@ This module is to general a complete config for Clash
 
 from modules import parse
 from modules import head
+from modules.convert import converter
 import config
 import yaml
 import cache
 
 
-def pack(url: list, urlstandby, content: str, interval, domain, short):
-    regionDict, total = parse.mkList(content)  # regions available and corresponding group name
-    # result = ""
+def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: list, content: str, interval, domain, short):
+    regionDict, total = parse.mkList(content, urlstandalone)  # regions available and corresponding group name
     result = {}
 
     # create a snippet containing region groups
-    # regionGroups = ""
     regionGroups = []
-    # for i in total.values():
-    #     regionGroups += "      - " + i[1] + "\n"
-    # regionGroups = regionGroups[:-1]
     for i in total.values():
         regionGroups.append(i[1])
     
 
     if short is None:
         # head of config
-        # result += head.HEAD
-        # result += "\n"
         result.update(head.HEAD)
 
         # dns
-        # result += head.DNS
-        # result += "\n"
         result.update(head.DNS)
+
+    # proxies
+    proxies = {
+        "proxies": []
+    }
+    proxiesName = []
+    proxiesStandbyName = []
+
+    if urlstandalone or urlstandbystandalone:
+        if urlstandalone:
+            for i in urlstandalone:
+                proxies["proxies"].append(
+                    i
+                )
+                proxiesName.append(i["name"])
+                proxiesStandbyName.append(i["name"])
+        if urlstandbystandalone:
+            for i in urlstandbystandalone:
+                proxies["proxies"].append(
+                    i
+                )
+                proxiesStandbyName.append(i["name"])
+    if len(proxies["proxies"]) == 0:
+        proxies = None
+    if len(proxiesName) == 0:
+        proxiesName = None
+    if len(proxiesStandbyName) == 0:
+        proxiesStandbyName = None
+    if proxies:
+        result.update(proxies)
 
 
     # proxy providers
-    # result += head.PROVIDER_HEAD
     providers = {
         "proxy-providers": {}
     }
-    # for u in range(len(url)):
-    #     result += head.PROVIDER_BASE0.format(u, url[u], interval, u)
-    for u in range(len(url)):
-        providers["proxy-providers"].update({
-            "subscription{}".format(u): {
-                "type": "http",
-                "url": url[u],
-                "interval": int(interval),
-                "path": "./sub/subscription{}.yaml".format(u),
-                "health-check": {
-                    "enable": True,
-                    "interval": 60,
-                    # "lazy": True,
-                    "url": "https://www.apple.com/library/test/success.html"
-                }
-            }
-        })
-
-    # if urlstandby:
-    #     for u in range(len(urlstandby)):
-    #         result += head.PROVIDER_BASE0.format("sub"+str(u), urlstandby[u], interval, "sub"+str(u))
-    # result += "\n"
-    if urlstandby:
-        for u in range(len(urlstandby)):
-            providers["proxy-providers"].update({
-                "subscription{}".format("sub"+str(u)): {
-                    "type": "http",
-                    "url": urlstandby[u],
-                    "interval": int(interval),
-                    "path": "./sub/subscription{}.yaml".format("sub"+str(u)),
-                    "health-check": {
-                        "enable": True,
-                        "interval": 60,
-                        # "lazy": True,
-                        "url": "https://www.apple.com/library/test/success.html"
+    if url or urlstandby:
+        if url:
+            for u in range(len(url)):
+                providers["proxy-providers"].update({
+                    "subscription{}".format(u): {
+                        "type": "http",
+                        "url": url[u],
+                        "interval": int(interval),
+                        "path": "./sub/subscription{}.yaml".format(u),
+                        "health-check": {
+                            "enable": True,
+                            "interval": 60,
+                            # "lazy": True,
+                            "url": "https://www.apple.com/library/test/success.html"
+                        }
                     }
-                }
-            })
-    result.update(providers)
+                })
+        if urlstandby:
+            for u in range(len(urlstandby)):
+                providers["proxy-providers"].update({
+                    "subscription{}".format("sub"+str(u)): {
+                        "type": "http",
+                        "url": urlstandby[u],
+                        "interval": int(interval),
+                        "path": "./sub/subscription{}.yaml".format("sub"+str(u)),
+                        "health-check": {
+                            "enable": True,
+                            "interval": 60,
+                            # "lazy": True,
+                            "url": "https://www.apple.com/library/test/success.html"
+                        }
+                    }
+                })
+    if len(providers["proxy-providers"]) == 0:
+        providers = None
+    if providers:
+        result.update(providers)
 
     # result += head.PROXY_GROUP_HEAD
     proxyGroups = {
@@ -88,73 +107,104 @@ def pack(url: list, urlstandby, content: str, interval, domain, short):
     }
     
     # add proxy select
-    # tmp = "\n"
+    # proxyGroups["proxy-groups"].append({
+    #     "name": "🚀 节点选择",
+    #     "type": "select",
+    #     "proxies": [
+    #         "♻️ 自动选择",
+    #         "🔯 故障转移",
+    #     ]
+    # })
     # for group in config.custom_proxy_group:
     #     if group["type"] == "load-balance":
-    #         tmp += "      - " + group["name"] + "\n"
-    # tmp += regionGroups
-    # result += head.PROXY_GROUP_PROXY_SELECT.format(tmp)
-    proxyGroups["proxy-groups"].append({
+    #         proxyGroups["proxy-groups"][0]["proxies"].append(group["name"])
+    # proxyGroups["proxy-groups"][0]["proxies"].extend(regionGroups)
+    # proxyGroups["proxy-groups"][0]["proxies"].append("🚀 手动切换")
+    # proxyGroups["proxy-groups"][0]["proxies"].append("DIRECT")
+    proxySelect = {
         "name": "🚀 节点选择",
         "type": "select",
         "proxies": [
             "♻️ 自动选择",
             "🔯 故障转移",
         ]
-    })
+    }
     for group in config.custom_proxy_group:
         if group["type"] == "load-balance":
-            proxyGroups["proxy-groups"][0]["proxies"].append(group["name"])
-    proxyGroups["proxy-groups"][0]["proxies"].extend(regionGroups)
-    proxyGroups["proxy-groups"][0]["proxies"].append("🚀 手动切换")
-    proxyGroups["proxy-groups"][0]["proxies"].append("DIRECT")
+            proxySelect["proxies"].append(group["name"])
+    proxySelect["proxies"].extend(regionGroups)
+    proxySelect["proxies"].append("🚀 手动切换")
+    proxySelect["proxies"].append("DIRECT")
+    proxyGroups["proxy-groups"].append(proxySelect)
+
     
 
     # add manual select
-    # subscriptions = ""
-    # for u in range(len(url)):
-    #     subscriptions += "      - subscription" + str(u) + "\n"
-    # standby = subscriptions
-    # if urlstandby:
-    #     for u in range(len(urlstandby)):
-    #         standby += "      - subscriptionsub" + str(u) + "\n"
-    # standby = standby[:-1]
-    # subscriptions = subscriptions[:-1]
-    # result += head.PROXY_GROUP_PROXY_MANUAL_SELECT.format(standby)
     subscriptions = []
-    for u in range(len(url)):
-        subscriptions.append("subscription{}".format(u))
+    if url:
+        for u in range(len(url)):
+            subscriptions.append("subscription{}".format(u))
     standby = subscriptions.copy()
     if urlstandby:
         for u in range(len(urlstandby)):
             standby.append("subscriptionsub{}".format(u))
-    proxyGroups["proxy-groups"].append({
+    if len(subscriptions) == 0:
+        subscriptions = None
+    if len(standby) == 0:
+        standby = None
+    manulSelect = {
         "name": "🚀 手动切换",
-        "type": "select",
-        "use": standby
-    })
+        "type": "select"
+    }
+    if standby:
+        manulSelect["use"] = standby
+    if proxiesStandbyName:
+        manulSelect["proxies"] = proxiesStandbyName
+    proxyGroups["proxy-groups"].append(manulSelect)
 
     # add auto select
-    # result += head.PROXY_GROUP_PROXY_AUTO_SELECT.format(subscriptions)
-    proxyGroups["proxy-groups"].append({
+    # proxyGroups["proxy-groups"].append({
+    #     "name": "♻️ 自动选择",
+    #     "type": "url-test",
+    #     "url": "https://www.apple.com/library/test/success.html",
+    #     "interval": 60,
+    #     "tolerance": 50,
+    #     "use": subscriptions
+    # })
+    autoSelect = {
         "name": "♻️ 自动选择",
         "type": "url-test",
         "url": "https://www.apple.com/library/test/success.html",
         "interval": 60,
         "tolerance": 50,
-        "use": subscriptions
-    })
+    }
+    if subscriptions:
+        autoSelect["use"] = subscriptions
+    if proxiesName:
+        autoSelect["proxies"] = proxiesName
+    proxyGroups["proxy-groups"].append(autoSelect)
 
     # add fallback
-    # result += head.PROXY_GROUP_PROXY_FALLBACK.format(subscriptions)
-    proxyGroups["proxy-groups"].append({
+    # proxyGroups["proxy-groups"].append({
+    #     "name": "🔯 故障转移",
+    #     "type": "fallback",
+    #     "url": "https://www.apple.com/library/test/success.html",
+    #     "interval": 60,
+    #     "tolerance": 50,
+    #     "use": subscriptions
+    # })
+    fallback = {
         "name": "🔯 故障转移",
         "type": "fallback",
         "url": "https://www.apple.com/library/test/success.html",
         "interval": 60,
         "tolerance": 50,
-        "use": subscriptions
-    })
+    }
+    if subscriptions:
+        fallback["use"] = subscriptions
+    if proxiesName:
+        fallback["proxies"] = proxiesName
+    proxyGroups["proxy-groups"].append(fallback)
 
     # add proxy groups
     # for group in config.custom_proxy_group:
@@ -186,31 +236,58 @@ def pack(url: list, urlstandby, content: str, interval, domain, short):
         if type == "load-balance":
             region = group.get("region")
             if region is None:
-                proxyGroups["proxy-groups"].append({
+                # proxyGroups["proxy-groups"].append({
+                #     "name": group["name"],
+                #     "type": "load-balance",
+                #     "strategy": "consistent-hashing",
+                #     "url": "https://www.apple.com/library/test/success.html",
+                #     "interval": 60,
+                #     "tolerance": 50,
+                #     "use": subscriptions
+                # })
+                loadBalance = {
                     "name": group["name"],
                     "type": "load-balance",
                     "strategy": "consistent-hashing",
                     "url": "https://www.apple.com/library/test/success.html",
                     "interval": 60,
                     "tolerance": 50,
-                    "use": subscriptions
-                })
+                }
+                if subscriptions:
+                    loadBalance["use"] = subscriptions
+                if proxiesName:
+                    loadBalance["proxies"] = proxiesName
+                proxyGroups["proxy-groups"].append(loadBalance)
             else:
                 tmp = []
                 for i in region:
                     if i in total:
                         tmp.append(total[i][0])
                 if len(tmp) > 0:
-                    proxyGroups["proxy-groups"].append({
+                    # proxyGroups["proxy-groups"].append({
+                    #     "name": group["name"],
+                    #     "type": "load-balance",
+                    #     "strategy": "consistent-hashing",
+                    #     "url": "https://www.apple.com/library/test/success.html",
+                    #     "interval": 60,
+                    #     "tolerance": 50,
+                    #     "use": subscriptions,
+                    #     "filter": "|".join(tmp)
+                    # })
+                    loadBalance = {
                         "name": group["name"],
                         "type": "load-balance",
                         "strategy": "consistent-hashing",
                         "url": "https://www.apple.com/library/test/success.html",
                         "interval": 60,
                         "tolerance": 50,
-                        "use": subscriptions,
                         "filter": "|".join(tmp)
-                    })
+                    }
+                    if subscriptions:
+                        loadBalance["use"] = subscriptions
+                    if proxiesName:
+                        loadBalance["proxies"] = proxiesName
+                    proxyGroups["proxy-groups"].append(loadBalance)
         
         elif type == "select":
             prior = group["prior"]
@@ -256,16 +333,28 @@ def pack(url: list, urlstandby, content: str, interval, domain, short):
     #     result += "\n"
     # result += "\n"
     for i in total:
-        proxyGroups["proxy-groups"].append({
+        # proxyGroups["proxy-groups"].append({
+        #     "name": total[i][1],
+        #     "type": "url-test",
+        #     "url": "https://www.apple.com/library/test/success.html",
+        #     "interval": 60,
+        #     "tolerance": 50,
+        #     "use": subscriptions,
+        #     "filter": total[i][0]
+        # })
+        urlTest = {
             "name": total[i][1],
             "type": "url-test",
             "url": "https://www.apple.com/library/test/success.html",
             "interval": 60,
             "tolerance": 50,
-            "use": subscriptions,
             "filter": total[i][0]
-        })
-    print(proxyGroups["proxy-groups"][-1])
+        }
+        if subscriptions:
+            urlTest["use"] = subscriptions
+        if proxiesName:
+            urlTest["proxies"] = proxiesName
+        proxyGroups["proxy-groups"].append(urlTest)
 
     result.update(proxyGroups)
 

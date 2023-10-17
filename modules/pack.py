@@ -215,6 +215,8 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
                     if proxiesName:
                         loadBalance["proxies"] = proxiesName
                     proxyGroups["proxy-groups"].append(loadBalance)
+                else:
+                    proxyGroups["proxy-groups"][0]["proxies"].remove(group["name"])
         
         elif type == "select":
             prior = group["prior"]

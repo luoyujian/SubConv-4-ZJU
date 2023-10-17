@@ -85,7 +85,7 @@ def sub():
     # get original headers
     headers = {'Content-Type': 'text/yaml;charset=utf-8'}
     # if there's only one subscription, return userinfo
-    if length(url)+length(urlstandalone) == 1:
+    if length(url) == 1:
         originalHeaders = requests.head(url[0], headers={'User-Agent':'clash'}).headers
         if 'subscription-userinfo' in originalHeaders:  # containing info about ramaining flow
             headers['subscription-userinfo'] = originalHeaders['subscription-userinfo']
@@ -93,11 +93,14 @@ def sub():
             headers['Content-Disposition'] = originalHeaders['Content-Disposition'].replace("attachment", "inline")
 
     content = []  # the proxies of original subscriptions
-    for i in range(len(url)):
-        # the test of response
-        respText = requests.get(url[i], headers={'User-Agent':'clash'}).text
-        content.append(parse.parseSubs(respText))
-        url[i] = "{}provider?{}".format(request.url_root, urlencode({"url": url[i]}))
+    if url is not None:
+        for i in range(len(url)):
+            # the test of response
+            respText = requests.get(url[i], headers={'User-Agent':'clash'}).text
+            content.append(parse.parseSubs(respText))
+            url[i] = "{}provider?{}".format(request.url_root, urlencode({"url": url[i]}))
+    if len(content) == 0:
+        content = None
     if urlstandby:
         for i in range(len(urlstandby)):
             urlstandby[i] = "{}provider?{}".format(request.url_root, urlencode({"url": urlstandby[i]}))

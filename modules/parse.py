@@ -31,16 +31,17 @@ def parseSubs(content):
 def mkList(content: list, urlstandalone: list):
     result = []
     total = {}
-    for u in content:
-        tmp = {}
-        # preprocess the content
-        contentTmp = re.findall(r"- name: (.+)", u)
-        contentTmp = ",".join(contentTmp)
-        for i in region_dict:
-            if re.search(region_dict[i][0], contentTmp, re.I) is not None:
-                tmp[i] = region_dict[i]
-                total[i] = region_dict[i]
-        result.append(tmp)
+    if content:
+        for u in content:
+            tmp = {}
+            # preprocess the content
+            contentTmp = re.findall(r"- name: (.+)", u)
+            contentTmp = ",".join(contentTmp)
+            for i in region_dict:
+                if re.search(region_dict[i][0], contentTmp, re.I) is not None:
+                    tmp[i] = region_dict[i]
+                    total[i] = region_dict[i]
+            result.append(tmp)
     if urlstandalone:
         for u in urlstandalone:
             tmp = {}

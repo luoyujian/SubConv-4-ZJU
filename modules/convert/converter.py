@@ -434,6 +434,8 @@ def ConvertsV2Ray(buf):
             remark = get(query.get("remark"))
             if remark == "":
                 remark = get(query.get("remarks"))
+            if remark == "":
+                remark = urlTG.hostname
             tg["name"] = uniqueName(names, remark)
             tg["type"] = urlTG.hostname
             tg["server"] = get(query.get("server"))
@@ -463,6 +465,8 @@ def ConvertsV2Ray(buf):
             remark = get(query.get("remark"))
             if remark == "":
                 remark = get(query.get("remarks"))
+            if remark == "":
+                urlHTTPS.path.strip("/")
             tg["name"] = uniqueName(names, remark)
             tg["type"] = urlHTTPS.path.strip("/")
             tg["server"] = get(query.get("server"))

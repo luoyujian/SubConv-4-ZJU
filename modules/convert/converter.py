@@ -437,13 +437,13 @@ def ConvertsV2Ray(buf):
             tg["name"] = uniqueName(names, remark)
             tg["type"] = urlTG.hostname
             tg["server"] = get(query.get("server"))
-            tg["port"] = get(query.get("port"))
+            tg["port"] = str(get(query.get("port")))
             user = get(query.get("user"))
             if user != "":
-                tg["user"] = user
+                tg["username"] = user
             password = get(query.get("pass"))
             if password != "":
-                tg["pass"] = password
+                tg["password"] = password
             
             proxies.append(tg)
 
@@ -466,13 +466,13 @@ def ConvertsV2Ray(buf):
             tg["name"] = uniqueName(names, remark)
             tg["type"] = urlHTTPS.path.strip("/")
             tg["server"] = get(query.get("server"))
-            tg["port"] = get(query.get("port"))
+            tg["port"] = str(get(query.get("port")))
             user = get(query.get("user"))
             if user != "":
-                tg["user"] = user
+                tg["username"] = user
             password = get(query.get("pass"))
             if password != "":
-                tg["pass"] = password
+                tg["passwork"] = password
 
             proxies.append(tg)
 

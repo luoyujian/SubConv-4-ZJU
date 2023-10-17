@@ -5,7 +5,6 @@ This module is to general a complete config for Clash
 
 from modules import parse
 from modules import head
-from modules.convert import converter
 import re
 import config
 import yaml
@@ -108,20 +107,6 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
     }
     
     # add proxy select
-    # proxyGroups["proxy-groups"].append({
-    #     "name": "🚀 节点选择",
-    #     "type": "select",
-    #     "proxies": [
-    #         "♻️ 自动选择",
-    #         "🔯 故障转移",
-    #     ]
-    # })
-    # for group in config.custom_proxy_group:
-    #     if group["type"] == "load-balance":
-    #         proxyGroups["proxy-groups"][0]["proxies"].append(group["name"])
-    # proxyGroups["proxy-groups"][0]["proxies"].extend(regionGroups)
-    # proxyGroups["proxy-groups"][0]["proxies"].append("🚀 手动切换")
-    # proxyGroups["proxy-groups"][0]["proxies"].append("DIRECT")
     proxySelect = {
         "name": "🚀 节点选择",
         "type": "select",
@@ -164,14 +149,6 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
     proxyGroups["proxy-groups"].append(manulSelect)
 
     # add auto select
-    # proxyGroups["proxy-groups"].append({
-    #     "name": "♻️ 自动选择",
-    #     "type": "url-test",
-    #     "url": "https://www.apple.com/library/test/success.html",
-    #     "interval": 60,
-    #     "tolerance": 50,
-    #     "use": subscriptions
-    # })
     autoSelect = {
         "name": "♻️ 自动选择",
         "type": "url-test",
@@ -186,14 +163,6 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
     proxyGroups["proxy-groups"].append(autoSelect)
 
     # add fallback
-    # proxyGroups["proxy-groups"].append({
-    #     "name": "🔯 故障转移",
-    #     "type": "fallback",
-    #     "url": "https://www.apple.com/library/test/success.html",
-    #     "interval": 60,
-    #     "tolerance": 50,
-    #     "use": subscriptions
-    # })
     fallback = {
         "name": "🔯 故障转移",
         "type": "fallback",
@@ -208,44 +177,11 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
     proxyGroups["proxy-groups"].append(fallback)
 
     # add proxy groups
-    # for group in config.custom_proxy_group:
-    #     type = group["type"]
-    #     if type == "load-balance":
-    ##         region = group.get("region")
-    #         if region is None:
-    #             result += head.PROXY_GROUP_PROXY_ANYCAST.format(group["name"], subscriptions)
-    #         else:
-    #             tmp = []
-    #             for i in region:
-    #                 if i in total:
-    #                     tmp.append(total[i][0])
-    #             if len(tmp) > 0:
-    #                 result += head.PROXY_GROUP_PROXY_ANYCAST.format(group["name"], subscriptions)
-    #                 result += "    filter: \"{}\"".format("|".join(tmp))
-    #                 result += "\n"
-
-    #     elif type == "select":
-    #         prior = group["prior"]
-    #         if prior == "DIRECT":
-    #             result += head.PROXY_GROUP_DIRECT_FIRST.format(group["name"], regionGroups)
-    #         elif prior == "REJECT":
-    #             result += head.PROXY_GROUP_REJECT_FIRST.format(group["name"], regionGroups)
-    #         else:
-    #             result += head.PROXY_GROUP_PROXY_FIRST.format(group["name"], regionGroups)
     for group in config.custom_proxy_group:
         type = group["type"]
         if type == "load-balance":
             region = group.get("region")
             if region is None:
-                # proxyGroups["proxy-groups"].append({
-                #     "name": group["name"],
-                #     "type": "load-balance",
-                #     "strategy": "consistent-hashing",
-                #     "url": "https://www.apple.com/library/test/success.html",
-                #     "interval": 60,
-                #     "tolerance": 50,
-                #     "use": subscriptions
-                # })
                 loadBalance = {
                     "name": group["name"],
                     "type": "load-balance",
@@ -265,16 +201,6 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
                     if i in total:
                         tmp.append(total[i][0])
                 if len(tmp) > 0:
-                    # proxyGroups["proxy-groups"].append({
-                    #     "name": group["name"],
-                    #     "type": "load-balance",
-                    #     "strategy": "consistent-hashing",
-                    #     "url": "https://www.apple.com/library/test/success.html",
-                    #     "interval": 60,
-                    #     "tolerance": 50,
-                    #     "use": subscriptions,
-                    #     "filter": "|".join(tmp)
-                    # })
                     loadBalance = {
                         "name": group["name"],
                         "type": "load-balance",
@@ -328,21 +254,7 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
                 })
 
     # add region groups
-    # for i in total:
-    #     result += head.PROXY_GROUP_REGION_GROUPS.format(total[i][1], subscriptions)
-    #     result += "    filter: \"{}\"".format(total[i][0])
-    #     result += "\n"
-    # result += "\n"
     for i in total:
-        # proxyGroups["proxy-groups"].append({
-        #     "name": total[i][1],
-        #     "type": "url-test",
-        #     "url": "https://www.apple.com/library/test/success.html",
-        #     "interval": 60,
-        #     "tolerance": 50,
-        #     "use": subscriptions,
-        #     "filter": total[i][0]
-        # })
         urlTest = {
             "name": total[i][1],
             "type": "url-test",

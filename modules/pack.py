@@ -274,7 +274,8 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
                     proxyGroup["use"] = subscriptions
                 if proxiesName:
                     proxyGroup["proxies"] = proxiesName
-            proxyGroups["proxy-groups"].append(proxyGroup)
+            if proxyGroup is not None:
+                proxyGroups["proxy-groups"].append(proxyGroup)
         
 
     # add region groups

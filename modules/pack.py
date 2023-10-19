@@ -269,14 +269,12 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
                         proxyGroup["url"] = "https://www.apple.com/library/test/success.html"
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
-                    
-                    proxyGroups["proxy-groups"].append(proxyGroup)
-
             else:
                 if subscriptions:
                     proxyGroup["use"] = subscriptions
                 if proxiesName:
                     proxyGroup["proxies"] = proxiesName
+            proxyGroups["proxy-groups"].append(proxyGroup)
         
 
     # add region groups

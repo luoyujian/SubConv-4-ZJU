@@ -13,9 +13,16 @@ import base64
 import urllib.parse as urlparse
 import distutils
 
+
 def ConvertsV2Ray(buf):
 
-    data = base64.b64decode(buf).decode("utf-8")
+    try:
+        data = base64.b64decode(buf).decode("utf-8")
+    except:
+        try:
+            data = buf.decode("utf-8")
+        except:
+            data = buf
 
     arr = data.splitlines()
 
@@ -25,12 +32,12 @@ def ConvertsV2Ray(buf):
     for line in arr:
         if line == "":
             continue
-    
+
         if -1 == line.find("://"):
             continue
         else:
             scheme, body = line.split("://", 1)
-        
+
         scheme = scheme.lower()
         if scheme == "hysteria":
             try:
@@ -48,20 +55,65 @@ def ConvertsV2Ray(buf):
             hysteria["port"] = urlHysteria.port
             hysteria["sni"] = query.get("peer")
             hysteria["obfs"] = query.get("obfs")
-            hysteria["alpn"] = str(query.get("alpn"))
+            alpn = get(query.get("alpn"))
+            if alpn != "":
+                hysteria["alpn"] = alpn.split(",")
             hysteria["auth_str"] = query.get("auth")
             hysteria["protocol"] = query.get("protocol")
-            up = query.get("up")
-            down = query.get("down")
+            up = get(query.get("up"))
+            down = get(query.get("down"))
             if up == "":
                 up = query.get("upmbps")
             if down == "":
                 down = query.get("downmbps")
             hysteria["up"] = up
             hysteria["down"] = down
-            hysteria["skip-cert-verify"] = bool(distutils.util.strtobool(query.get("insecure")))
+            hysteria["skip-cert-verify"] = bool(
+                distutils.util.strtobool(query.get("insecure")))
 
             proxies.append(hysteria)
+        elif scheme == "tuic":
+            # A temporary unofficial TUIC share link standard
+            # Modified from https://github.com/daeuniverse/dae/discussions/182
+            # Changes:
+            #   1. Support TUICv4, just replace uuid:password with token
+            #   2. Remove `allow_insecure` field
+            try:
+                urlTUIC = urlparse.urlparse(line)
+            except:
+                continue
+
+            query = dict(urlparse.parse_qsl(urlTUIC.query))
+
+            tuic = {}
+            tuic["name"] = uniqueName(
+                names, urlparse.unquote(urlTUIC.fragment))
+            tuic["type"] = scheme
+            tuic["server"] = urlTUIC.hostname
+            tuic["port"] = urlTUIC.port
+            tuic["udp"] = True
+            password = urlTUIC.password
+            if password is not None:
+                tuic["uuid"] = urlTUIC.username
+                tuic["password"] = password
+            else:
+                tuic["token"] = urlTUIC.username
+            cc = get(query.get("congestion_control"))
+            if cc != "":
+                tuic["congestion-control"] = cc
+            alpn = get(query.get("alpn"))
+            if alpn != "":
+                tuic["alpn"] = alpn.split(",")
+            sni = get(query.get("sni"))
+            if sni != "":
+                tuic["sni"] = sni
+            if query.get("disable_sni") == "1":
+                tuic["disable-sni"] = True
+            udpRelayMode = get(query.get("udp_relay_mode"))
+            if udpRelayMode != "":
+                tuic["udp-relay-mode"] = udpRelayMode
+            proxies.append(tuic)
+
         elif scheme == "trojan":
             try:
                 urlTrojan = urlparse.urlparse(line)
@@ -79,16 +131,22 @@ def ConvertsV2Ray(buf):
             trojan["port"] = urlTrojan.port
             trojan["password"] = urlTrojan.password
             trojan["udp"] = True
-            trojan["skip-cert-verify"] = bool(distutils.util.strtobool(query.get("allowInsecure")))
+            trojan["skip-cert-verify"] = bool(
+                distutils.util.strtobool(query.get("allowInsecure")))
 
             sni = get(query.get("sni"))
             if sni != "":
                 trojan["sni"] = sni
 
-            network = get(query.get("type").lower())
+            alpn = get(query.get("alpn"))
+            if alpn != "":
+                trojan["alpn"] = alpn.split(",")
+
+            network = get(query.get("type"))
             if network != "":
+                network = network.lower()
                 trojan["network"] = network
-            
+
             if network == "ws":
                 headers = {}
                 wsOpts = {}
@@ -110,9 +168,9 @@ def ConvertsV2Ray(buf):
                 trojan["client-fingerprint"] = "chrome"
             else:
                 trojan["client-fingerprint"] = fingerprint
-            
+
             proxies.append(trojan)
-        
+
         elif scheme == "vless":
             try:
                 urlVless = urlparse.urlparse(line)
@@ -158,7 +216,7 @@ def ConvertsV2Ray(buf):
             except:
                 continue
             values = {}
-            
+
             try:
                 tempName = values["ps"]
             except:
@@ -189,7 +247,7 @@ def ConvertsV2Ray(buf):
             sni = get(values.get("sni"))
             if sni != "":
                 vmess["servername"] = sni
-            
+
             network = get(values.get("net")).lower()
             if values["type"] == "http":
                 network = "http"
@@ -202,6 +260,9 @@ def ConvertsV2Ray(buf):
                 tls = str(tls).lower()
                 if tls.endswith("tls"):
                     vmess["tls"] = True
+                alpn = values.get("alpn")
+                if alpn is not None and alpn != "":
+                    vmess["alpn"] = alpn.split(",")
 
             if network == "http":
                 headers = {}
@@ -216,7 +277,7 @@ def ConvertsV2Ray(buf):
                 httpOpts["headers"] = headers
 
                 vmess["http-opts"] = httpOpts
-            
+
             elif network == "h2":
                 headers = {}
                 h2Opts = {}
@@ -245,12 +306,12 @@ def ConvertsV2Ray(buf):
                 grpcOpts = {}
                 grpcOpts["grpc-service-name"] = get(values.get("path"))
                 vmess["grpc-opts"] = grpcOpts
-            
+
             proxies.append(vmess)
 
         # ss and ssr still WIP
         elif scheme == "ss":
-            try: 
+            try:
                 urlSS = urlparse.urlparse(line)
             except:
                 continue
@@ -268,7 +329,7 @@ def ConvertsV2Ray(buf):
                     urlSS = urlparse.urlparse("ss://"+dcBuf)
                 except:
                     continue
-            
+
             # there may be bugs
             cipherRaw = urlSS.username
             cipher = cipherRaw
@@ -358,13 +419,69 @@ def ConvertsV2Ray(buf):
 
             if protocolParam != "":
                 ssr["protocol-param"] = protocolParam
-            
+
             proxies.append(ssr)
+
+        elif scheme == "tg":
+            try:
+                urlTG = urlparse.urlparse(line)
+            except:
+                continue
+
+            query = dict(urlparse.parse_qsl(urlTG.query))
+
+            tg = {}
+            remark = get(query.get("remark"))
+            if remark == "":
+                remark = get(query.get("remarks"))
+            if remark == "":
+                remark = urlTG.hostname
+            tg["name"] = uniqueName(names, remark)
+            tg["type"] = urlTG.hostname
+            tg["server"] = get(query.get("server"))
+            tg["port"] = str(get(query.get("port")))
+            user = get(query.get("user"))
+            if user != "":
+                tg["username"] = user
+            password = get(query.get("pass"))
+            if password != "":
+                tg["password"] = password
+            
+            proxies.append(tg)
+
+        elif scheme == "https":
+            try:
+                urlHTTPS = urlparse.urlparse(line)
+            except:
+                continue
+
+            query = dict(urlparse.parse_qsl(urlHTTPS.query))
+
+            if not urlHTTPS.hostname.startswith("t.me"):
+                continue
+
+            tg = {}
+
+            remark = get(query.get("remark"))
+            if remark == "":
+                remark = get(query.get("remarks"))
+            if remark == "":
+                urlHTTPS.path.strip("/")
+            tg["name"] = uniqueName(names, remark)
+            tg["type"] = urlHTTPS.path.strip("/")
+            tg["server"] = get(query.get("server"))
+            tg["port"] = str(get(query.get("port")))
+            user = get(query.get("user"))
+            if user != "":
+                tg["username"] = user
+            password = get(query.get("pass"))
+            if password != "":
+                tg["passwork"] = password
+
+            proxies.append(tg)
 
 
     if len(proxies) == 0:
         raise Exception("No valid proxies found")
 
     return proxies
-
-

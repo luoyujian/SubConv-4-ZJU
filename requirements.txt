@@ -1,4 +1,4 @@
-flask==2.1.2
+Quart==0.19.3
+hypercorn==0.14.4
 requests==2.27.1
-gevent==21.12.0
 PyYAML==6.0

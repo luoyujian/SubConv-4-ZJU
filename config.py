@@ -40,7 +40,6 @@ ruleset = [
 ]
 
 region_dict = {
-    "ZJU": [r"ZJU", "ZJU节点"],
     "HK": [r"🇭🇰|HK|Hong|Kong|HGC|WTT|CMI|港", "🇭🇰 香港节点"],
     "TW": [r"🇹🇼|TW|Taiwan|新北|彰化|CHT|台|HINET", "🇨🇳 台湾节点"],
     "SG": [r"🇸🇬|SG|Singapore|狮城|^新[^节北]|[^刷更]新[^节北]", "🇸🇬 狮城节点"],
@@ -53,26 +52,22 @@ custom_proxy_group = [
     {
         "name": "♻️ 自动选择",
         "type": "url-test",
-        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
         "rule": False
     },
     {
         "name": "🚀 手动切换",
         "type": "select",
         "manual": True,
-        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
         "rule": False
     },
     {
         "name": "🔯 故障转移",
         "type": "fallback",
-        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
         "rule": False
     },
     {
         "name": "🔮 负载均衡",
         "type": "load-balance",
-        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
         "rule": False
     },
     {

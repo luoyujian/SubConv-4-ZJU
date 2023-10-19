@@ -61,6 +61,7 @@ def sub():
         urlstandalone = None
 
     urlstandby = args.get("urlstandby")
+    urlstandbystandalone = None
     if urlstandby:
         urlstandby = re.split(r"[|\n]", urlstandby)
         tmp = list(filter(lambda x: x!="", urlstandby))

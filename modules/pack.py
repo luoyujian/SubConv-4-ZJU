@@ -12,7 +12,7 @@ import cache
 
 
 def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: list, content: str, interval, domain, short):
-    regionDict, total = parse.mkList(content, urlstandalone)  # regions available and corresponding group name
+    regionDict, total, providerProxyNames = parse.mkList(content, urlstandalone)  # regions available and corresponding group name
     result = {}
 
     # create a snippet containing region groups
@@ -110,22 +110,18 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
     proxySelect = {
         "name": "🚀 节点选择",
         "type": "select",
-        "proxies": [
-            "♻️ 自动选择",
-            "🔯 故障转移",
-        ]
+        "proxies": []
     }
     for group in config.custom_proxy_group:
-        if group["type"] == "load-balance":
+        if group.get("rule") == False:
             proxySelect["proxies"].append(group["name"])
     proxySelect["proxies"].extend(regionGroups)
-    proxySelect["proxies"].append("🚀 手动切换")
     proxySelect["proxies"].append("DIRECT")
     proxyGroups["proxy-groups"].append(proxySelect)
 
     
 
-    # add manual select
+    # generate subscriptions and standby subscriptions list
     subscriptions = []
     if url:
         for u in range(len(url)):
@@ -138,87 +134,19 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
         subscriptions = None
     if len(standby) == 0:
         standby = None
-    manulSelect = {
-        "name": "🚀 手动切换",
-        "type": "select"
-    }
-    if standby:
-        manulSelect["use"] = standby
-    if proxiesStandbyName:
-        manulSelect["proxies"] = proxiesStandbyName
-    proxyGroups["proxy-groups"].append(manulSelect)
 
-    # add auto select
-    autoSelect = {
-        "name": "♻️ 自动选择",
-        "type": "url-test",
-        "url": "https://www.apple.com/library/test/success.html",
-        "interval": 60,
-        "tolerance": 50,
-    }
-    if subscriptions:
-        autoSelect["use"] = subscriptions
-    if proxiesName:
-        autoSelect["proxies"] = proxiesName
-    proxyGroups["proxy-groups"].append(autoSelect)
-
-    # add fallback
-    fallback = {
-        "name": "🔯 故障转移",
-        "type": "fallback",
-        "url": "https://www.apple.com/library/test/success.html",
-        "interval": 60,
-        "tolerance": 50,
-    }
-    if subscriptions:
-        fallback["use"] = subscriptions
-    if proxiesName:
-        fallback["proxies"] = proxiesName
-    proxyGroups["proxy-groups"].append(fallback)
 
     # add proxy groups
     for group in config.custom_proxy_group:
         type = group["type"]
-        if type == "load-balance":
-            region = group.get("region")
-            if region is None:
-                loadBalance = {
-                    "name": group["name"],
-                    "type": "load-balance",
-                    "strategy": "consistent-hashing",
-                    "url": "https://www.apple.com/library/test/success.html",
-                    "interval": 60,
-                    "tolerance": 50,
-                }
-                if subscriptions:
-                    loadBalance["use"] = subscriptions
-                if proxiesName:
-                    loadBalance["proxies"] = proxiesName
-                proxyGroups["proxy-groups"].append(loadBalance)
-            else:
-                tmp = []
-                for i in region:
-                    if i in total:
-                        tmp.append(total[i][0])
-                if len(tmp) > 0:
-                    loadBalance = {
-                        "name": group["name"],
-                        "type": "load-balance",
-                        "strategy": "consistent-hashing",
-                        "url": "https://www.apple.com/library/test/success.html",
-                        "interval": 60,
-                        "tolerance": 50,
-                        "filter": "|".join(tmp)
-                    }
-                    if subscriptions:
-                        loadBalance["use"] = subscriptions
-                    if proxiesName:
-                        loadBalance["proxies"] = proxiesName
-                    proxyGroups["proxy-groups"].append(loadBalance)
-                else:
-                    proxyGroups["proxy-groups"][0]["proxies"].remove(group["name"])
-        
-        elif type == "select":
+        region = group.get("region")
+        regex = group.get("regex")
+
+        rule = group.get("rule")
+        if rule is None:
+            rule = True
+
+        if type == "select" and rule:
             prior = group["prior"]
             if prior == "DIRECT":
                 proxyGroups["proxy-groups"].append({
@@ -254,6 +182,102 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
                         "DIRECT"
                     ]
                 })
+
+        elif type == "load-balance" or type == "select" or type == "fallback" or type == "url-test":
+            # init
+            proxyGroup = {
+                "name": group["name"],
+                "type": type
+            }
+            # add proxies
+            if regex is not None or region is not None:
+                if regex is not None:
+                    tmp = [regex]
+                else:
+                    tmp = []
+                    for i in region:
+                        if i in total:
+                            tmp.append(total[i][0])
+                if len(tmp) > 0:
+                    providerProxies = []
+                    proxyGroupProxies = []
+                    proxyGroup["filter"] = "|".join(tmp)
+                    # check if the proxy is in the subscription match the regex
+                    # check if the standalone proxy match the regex
+                    if group.get("manual"):
+                        if standby:
+                            for p in standby:
+                                if re.search(
+                                    proxyGroup["filter"],
+                                    p,
+                                    re.I
+                                ) is not None:
+                                    providerProxies.append(p)
+                                    break
+                            if len(providerProxies) > 0:
+                                proxyGroup["use"] = standby
+                        if proxiesStandbyName:
+                            for p in proxiesStandbyName:
+                                if re.search(
+                                    proxyGroup["filter"],
+                                    p,
+                                    re.I
+                                ) is not None:
+                                    proxyGroupProxies.append(p)
+                            if len(proxyGroupProxies) > 0:
+                                proxyGroup["proxies"] = proxyGroupProxies
+                    else:
+                        if subscriptions:
+                            for p in providerProxyNames:
+                                if re.search(
+                                    proxyGroup["filter"],
+                                    p,
+                                    re.I
+                                ) is not None:
+                                    providerProxies.append(p)
+                                    break
+                            if len(providerProxies) > 0:
+                                proxyGroup["use"] = subscriptions
+                        if proxiesName:
+                            for p in proxiesName:
+                                if re.search(
+                                    proxyGroup["filter"],
+                                    p,
+                                    re.I
+                                ) is not None:
+                                    proxyGroupProxies.append(p)
+                            if len(proxyGroupProxies) > 0:
+                                proxyGroup["proxies"] = proxyGroupProxies
+                    # if no proxy match the regex, remove the name in the first group
+                    if len(providerProxies) + len(proxyGroupProxies) == 0:
+                        proxyGroups["proxy-groups"][0]["proxies"].remove(group["name"])
+                        proxyGroup = None
+                else:
+                    proxyGroups["proxy-groups"][0]["proxies"].remove(group["name"])
+                    proxyGroup = None
+                if proxyGroup is not None:
+                    if type == "load-balance":
+                        proxyGroup["strategy"] = "consistent-hashing"
+                        proxyGroup["url"] = "https://www.apple.com/library/test/success.html"
+                        proxyGroup["interval"] = 60
+                        proxyGroup["tolerance"] = 50
+                    elif type == "fallback":
+                        proxyGroup["url"] = "https://www.apple.com/library/test/success.html"
+                        proxyGroup["interval"] = 60
+                        proxyGroup["tolerance"] = 50
+                    elif type == "url-test":
+                        proxyGroup["url"] = "https://www.apple.com/library/test/success.html"
+                        proxyGroup["interval"] = 60
+                        proxyGroup["tolerance"] = 50
+                    
+                    proxyGroups["proxy-groups"].append(proxyGroup)
+
+            else:
+                if subscriptions:
+                    proxyGroup["use"] = subscriptions
+                if proxiesName:
+                    proxyGroup["proxies"] = proxiesName
+        
 
     # add region groups
     for i in total:

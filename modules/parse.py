@@ -31,12 +31,15 @@ def parseSubs(content):
 def mkList(content: list, urlstandalone: list):
     result = []
     total = {}
+    providerProxyNames = []
     if content:
         for u in content:
             tmp = {}
             # preprocess the content
             contentTmp = re.findall(r"- name: (.+)", u)
+            providerProxyNames.extend(contentTmp)
             contentTmp = ",".join(contentTmp)
+
             for i in region_dict:
                 if re.search(region_dict[i][0], contentTmp, re.I) is not None:
                     tmp[i] = region_dict[i]
@@ -54,4 +57,4 @@ def mkList(content: list, urlstandalone: list):
                     tmp[i] = region_dict[i]
                     total[i] = region_dict[i]
             result.append(tmp)
-    return result, total
+    return result, total, providerProxyNames

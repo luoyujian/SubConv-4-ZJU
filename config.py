@@ -51,12 +51,34 @@ region_dict = {
 
 custom_proxy_group = [
     {
+        "name": "♻️ 自动选择",
+        "type": "url-test",
+        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
+        "rule": False
+    },
+    {
+        "name": "🚀 手动切换",
+        "type": "select",
+        "manual": True,
+        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
+        "rule": False
+    },
+    {
+        "name": "🔯 故障转移",
+        "type": "fallback",
+        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
+        "rule": False
+    },
+    {
         "name": "🔮 负载均衡",
         "type": "load-balance",
+        "regex": "^(?!.*(ZJU|浙大|内网|✉️)).*",
+        "rule": False
     },
     {
         "name": "🔮 香港负载均衡",
         "type": "load-balance",
+        "rule": False,
         "region": ["HK"]
     },
     {

@@ -11,8 +11,8 @@ import yaml
 import cache
 
 
-def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: list, content: str, interval, domain, short):
-    regionDict, total, providerProxyNames = parse.mkList(content, urlstandalone)  # regions available and corresponding group name
+async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: list, content: str, interval, domain, short):
+    regionDict, total, providerProxyNames = await parse.mkList(content, urlstandalone)  # regions available and corresponding group name
     result = {}
 
     # create a snippet containing region groups
@@ -38,16 +38,12 @@ def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystandalone: 
     if urlstandalone or urlstandbystandalone:
         if urlstandalone:
             for i in urlstandalone:
-                proxies["proxies"].append(
-                    i
-                )
+                proxies["proxies"].append(i)
                 proxiesName.append(i["name"])
                 proxiesStandbyName.append(i["name"])
         if urlstandbystandalone:
             for i in urlstandbystandalone:
-                proxies["proxies"].append(
-                    i
-                )
+                proxies["proxies"].append(i)
                 proxiesStandbyName.append(i["name"])
     if len(proxies["proxies"]) == 0:
         proxies = None

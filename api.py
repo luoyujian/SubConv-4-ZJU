@@ -4,10 +4,12 @@ from modules import pack
 from modules import parse
 from modules.convert import converter
 import re
-from flask import Flask, request, render_template 
+from quart import Quart, request
 import requests
-from urllib.parse import urlencode, unquote
-from gevent import pywsgi
+from urllib.parse import urlencode
+from hypercorn.asyncio import serve
+from hypercorn.config import Config
+import asyncio
 import argparse
 
 def length(sth):
@@ -16,22 +18,22 @@ def length(sth):
     else:
         return len(sth)
 
-app = Flask(__name__, static_folder="static")
+app = Quart(__name__, static_folder="static")
 
 
 @app.route("/")
-def mainpage():
-    return app.send_static_file("index.html")
+async def mainpage():
+    return await app.send_static_file("index.html")
 # route for mainpage
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
-def index(path):
-    return app.send_static_file(path)
+async def index(path):
+    return await app.send_static_file(path)
 
 
 # subscription converter api
 @app.route("/sub")
-def sub():
+async def sub():
     args = request.args
     # get interval
     if "interval" in args:
@@ -98,7 +100,7 @@ def sub():
         for i in range(len(url)):
             # the test of response
             respText = requests.get(url[i], headers={'User-Agent':'clash'}).text
-            content.append(parse.parseSubs(respText))
+            content.append(await parse.parseSubs(respText))
             url[i] = "{}provider?{}".format(request.url_root, urlencode({"url": url[i]}))
     if len(content) == 0:
         content = None
@@ -109,16 +111,16 @@ def sub():
     # get the domain or ip of this api to add rule for this
     domain = re.search(r"([^:]+)(:\d{1,5})?", request.host).group(1)
     # generate the subscription
-    result = pack.pack(url=url, urlstandalone=urlstandalone, urlstandby=urlstandby,urlstandbystandalone=urlstandbystandalone, content=content, interval=interval, domain=domain, short=short)
+    result = await pack.pack(url=url, urlstandalone=urlstandalone, urlstandby=urlstandby,urlstandbystandalone=urlstandbystandalone, content=content, interval=interval, domain=domain, short=short)
     return result, headers
 
 
 # provider converter
 @app.route("/provider")
-def provider():
+async def provider():
     headers = {'Content-Type': 'text/yaml;charset=utf-8'}
     url = request.args.get("url")
-    return parse.parseSubs(
+    return await parse.parseSubs(
         requests.get(url, headers={'User-Agent':'clash'}).text
     ), headers
 
@@ -133,5 +135,7 @@ if __name__ == "__main__":
     # Debug
     # app.run(host=args.host, port=args.port, debug=True)
     # Production
-    server = pywsgi.WSGIServer((args.host, args.port), app)
-    server.serve_forever()
+    config = Config()
+    config.bind = [f"{args.host}:{args.port}"]
+    server = serve(app, config)
+    asyncio.run(server)

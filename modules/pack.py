@@ -266,10 +266,16 @@ async def pack(url: list, urlstandalone: list, urlstandby:list, urlstandbystanda
                         proxyGroup["interval"] = 60
                         proxyGroup["tolerance"] = 50
             else:
-                if subscriptions:
-                    proxyGroup["use"] = subscriptions
-                if proxiesName:
-                    proxyGroup["proxies"] = proxiesName
+                if group.get("manual"):
+                    if standby:
+                        proxyGroup["use"] = standby
+                    if proxiesStandbyName:
+                        proxyGroup["proxies"] = proxiesStandbyName
+                else:
+                    if subscriptions:
+                        proxyGroup["use"] = subscriptions
+                    if proxiesName:
+                        proxyGroup["proxies"] = proxiesName
             if proxyGroup is not None:
                 proxyGroups["proxy-groups"].append(proxyGroup)
         

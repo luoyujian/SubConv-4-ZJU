@@ -80,10 +80,10 @@ async def sub():
         if len(urlstandbystandalone) == 0:
             urlstandbystandalone = None
         
-        if urlstandalone:
-            urlstandalone = converter.ConvertsV2Ray(urlstandalone)
-        if urlstandbystandalone:
-            urlstandbystandalone = converter.ConvertsV2Ray(urlstandbystandalone)
+    if urlstandalone:
+        urlstandalone = converter.ConvertsV2Ray(urlstandalone)
+    if urlstandbystandalone:
+        urlstandbystandalone = converter.ConvertsV2Ray(urlstandbystandalone)
 
     # get original headers
     headers = {'Content-Type': 'text/yaml;charset=utf-8'}

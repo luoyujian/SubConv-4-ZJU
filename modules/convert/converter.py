@@ -211,11 +211,11 @@ def ConvertsV2Ray(buf):
                 proxies.append(vmess)
                 continue
 
+            values = {}
             try:
-                jsonDc = json.loads(dcBuf)
+                values = json.loads(dcBuf)
             except:
                 continue
-            values = {}
 
             try:
                 tempName = values["ps"]
@@ -249,7 +249,7 @@ def ConvertsV2Ray(buf):
                 vmess["servername"] = sni
 
             network = get(values.get("net")).lower()
-            if values["type"] == "http":
+            if values.get("type") == "http":
                 network = "http"
             elif network == "http":
                 network = "h2"
